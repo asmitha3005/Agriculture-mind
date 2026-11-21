@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriMind AI | Smart Agriculture</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header>
+    <nav class="navbar">
+        <div class="logo">🌱 AgriMind AI</div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="#analyzer">Plant Analyzer</a>
+            <a href="#assistant">AI Assistant</a>
+        </div>
+    </nav>
+</header>
+
+<section class="hero">
+    <div class="hero-content">
+        <span class="tag">SMART AGRICULTURE PLATFORM</span>
+        <h1>Grow Smarter.<br><span>Farm Better.</span></h1>
+        <p>
+            Empowering farmers with AI-powered plant health
+            insights and intelligent agricultural assistance.
+        </p>
+        <a href="#analyzer" class="primary-btn">Analyze Your Plant →</a>
+    </div>
+    <div class="hero-icon">🌾</div>
+</section>
+
+<section class="features">
+    <div class="feature-card">
+        <div>🌿</div>
+        <h3>Plant Analysis</h3>
+        <p>Get AI-assisted observations from plant images.</p>
+    </div>
+    <div class="feature-card">
+        <div>🤖</div>
+        <h3>AI Assistant</h3>
+        <p>Ask questions about agriculture and crop care.</p>
+    </div>
+    <div class="feature-card">
+        <div>💧</div>
+        <h3>Smart Guidance</h3>
+        <p>Explore practical plant-care recommendations.</p>
+    </div>
+</section>
+
+<section id="analyzer" class="analyzer section">
+    <div class="section-heading">
+        <span class="tag">AI VISION TECHNOLOGY</span>
+        <h2>Plant Health Analyzer</h2>
+        <p>Upload a clear photograph of a plant leaf for preliminary assessment.</p>
+    </div>
+
+    <div class="upload-card">
+        <form action="/analyze" method="POST" enctype="multipart/form-data">
+            <label for="image" class="upload-area">
+                <div class="upload-icon">📸</div>
+                <h3>Upload Plant Image</h3>
+                <p>Choose a JPG, PNG or WEBP image</p>
+                <input type="file" name="image" id="image"
+                       accept="image/png,image/jpeg,image/webp" required>
+            </label>
+            <img id="preview" alt="Selected plant image preview">
+            <button type="submit" class="primary-btn full-btn">
+                Analyze Plant →
+            </button>
+        </form>
+
+        {% if error %}
+        <div class="error-box">{{ error }}</div>
+        {% endif %}
+
+        {% if result %}
+        <div class="result-box">
+            <h2>Analysis Result</h2>
+            <h3>{{ result }}</h3>
+
+            <p><strong>Plant:</strong> {{ plant }}</p>
+            <p><strong>Assessment confidence:</strong> {{ confidence_label }}</p>
+
+            <h4>Visible Observations</h4>
+            <ul>
+                {% for item in observations %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+
+            <h4>Suggested Next Steps</h4>
+            <p>{{ pesticide }}</p>
+
+            <h4>Prevention</h4>
+            <p>{{ prevention }}</p>
+
+            <h4>Supportive Care</h4>
+            <p>{{ remedy_process }}</p>
+
+            <h4>Limitations</h4>
+            <p>{{ limitations }}</p>
+
+            <p class="disclaimer">
+                This is preliminary AI-generated guidance, not a confirmed diagnosis.
+                Consult an agricultural expert for confirmation.
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<section id="assistant" class="assistant section">
+    <div class="section-heading">
+        <span class="tag">YOUR AGRICULTURE COMPANION</span>
+        <h2>Ask AgriMind AI</h2>
+        <p>Get assistance with your agricultural questions.</p>
+    </div>
+
+    <div class="chat-card">
+        <div id="chatMessages" class="chat-messages">
+            <div class="bot-message">
+                Hello! 🌱 I'm AgriMind AI. How can I help with your
+                agriculture questions today?
+            </div>
+        </div>
+
+        <form id="chatForm" class="chat-form">
+            <input type="text" id="chatInput"
+                   placeholder="Ask your agriculture question..."
+                   maxlength="4000" required>
+            <button type="submit">Send ↑</button>
+        </form>
+
+        <button id="clearChat" class="clear-btn" type="button">
+            Clear conversation
+        </button>
+    </div>
+</section>
+
+<footer>
+    <h3>🌱 AgriMind AI</h3>
+    <p>Intelligent Technology for Sustainable Agriculture</p>
+    <p>© 2026 AgriMind AI. All rights reserved.</p>
+    <p class="disclaimer">
+        AI-generated plant assessments should be verified by agricultural experts.
+    </p>
+</footer>
+
+<script>
+const imageInput = document.getElementById("image");
+const preview = document.getElementById("preview");
+
+imageInput.addEventListener("change", function () {
+    const file = this.files[0];
+
+    if (file) {
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = "block";
+    } else {
+        preview.style.display = "none";
+    }
+});
+
+const chatForm = document.getElementById("chatForm");
+const chatInput = document.getElementById("chatInput");
+const chatMessages = document.getElementById("chatMessages");
+
+function addMessage(text, className) {
+    const message = document.createElement("div");
+    message.className = className;
+    message.textContent = text;
+    chatMessages.appendChild(message);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+chatForm.addEventListener("submit", async function (event) {
+    event.preventDefault();
+
+    const message = chatInput.value.trim();
+    if (!message) return;
+
+    addMessage(message, "user-message");
+    chatInput.value = "";
+
+    const loading = document.createElement("div");
+    loading.className = "bot-message";
+    loading.textContent = "Thinking...";
+    chatMessages.appendChild(loading);
+
+    try {
+        const response = await fetch("/chat", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({message: message})
+        });
+
+        const data = await response.json();
+        loading.textContent = data.answer || data.error || "Something went wrong.";
+
+    } catch (error) {
+        loading.textContent = "Unable to connect. Please try again.";
+    }
+});
+
+document.getElementById("clearChat").addEventListener("click", async () => {
+    try {
+        await fetch("/clear-chat", {method: "POST"});
+        chatMessages.innerHTML =
+            '<div class="bot-message">Conversation cleared! 🌱 Ask me anything.</div>';
+    } catch (error) {
+        addMessage("Could not clear conversation.", "bot-message");
+    }
+});
+</script>
+
+</body>
+</html>
